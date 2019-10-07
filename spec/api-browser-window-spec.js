@@ -514,10 +514,7 @@ describe('BrowserWindow module', () => {
     })
   })
 
-  // Temporarily disable on WOA until
-  // https://github.com/electron/electron/issues/20110 is resolved
-  const skip = process.platform === 'win32' && process.arch === 'arm64';
-  (skip ? describe.skip : describe)('BrowserWindow.moveTop()', () => {
+  describe('BrowserWindow.moveTop()', () => {
     it('should not steal focus', async () => {
       const posDelta = 50
       const wShownInactive = emittedOnce(w, 'show')
