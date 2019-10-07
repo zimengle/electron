@@ -129,7 +129,7 @@ app.on('ready', () => {
     console.log('Debugger detached due to : ', reason)
   })
 
-  mainWindow.webContents.debugger.on('message', function (event, method, params) {
+  mainWindow.webContents.debugger.on('message', function (event, method, params: any) {
     if (method === 'Network.requestWillBeSent') {
       if (params.request.url === 'https://www.github.com') {
         mainWindow.webContents.debugger.detach()
@@ -356,8 +356,8 @@ app.on('ready', () => {
   window.loadURL('https://github.com')
 })
 
-// Supported Chrome command line switches
-// https://github.com/atom/electron/blob/master/docs/api/chrome-command-line-switches.md
+// Supported command line switches
+// https://github.com/atom/electron/blob/master/docs/api/command-line-switches.md
 
 app.commandLine.appendSwitch('remote-debugging-port', '8315')
 app.commandLine.appendSwitch('host-rules', 'MAP * 127.0.0.1')
@@ -756,6 +756,54 @@ Menu.buildFromTemplate([
   { label: '3' }
 ])
 
+// All possible MenuItem roles
+Menu.buildFromTemplate([
+  { role: 'undo' },
+  { role: 'redo' },
+  { role: 'cut' },
+  { role: 'copy' },
+  { role: 'paste' },
+  { role: 'pasteAndMatchStyle' },
+  { role: 'delete' },
+  { role: 'selectAll' },
+  { role: 'reload' },
+  { role: 'forceReload' },
+  { role: 'toggleDevTools' },
+  { role: 'resetZoom' },
+  { role: 'zoomIn' },
+  { role: 'zoomOut' },
+  { role: 'togglefullscreen' },
+  { role: 'window' },
+  { role: 'minimize' },
+  { role: 'close' },
+  { role: 'help' },
+  { role: 'about' },
+  { role: 'services' },
+  { role: 'hide' },
+  { role: 'hideOthers' },
+  { role: 'unhide' },
+  { role: 'quit' },
+  { role: 'startSpeaking' },
+  { role: 'stopSpeaking' },
+  { role: 'close' },
+  { role: 'minimize' },
+  { role: 'zoom'  },
+  { role: 'front' },
+  { role: 'appMenu' },
+  { role: 'fileMenu' },
+  { role: 'editMenu' },
+  { role: 'viewMenu' },
+  { role: 'windowMenu' },
+  { role: 'recentDocuments' },
+  { role: 'clearRecentDocuments' },
+  { role: 'toggleTabBar' },
+  { role: 'selectNextTab' },
+  { role: 'selectPreviousTab' },
+  { role: 'mergeAllWindows' },
+  { role: 'clearRecentDocuments' },
+  { role : 'moveTabToNewWindow'}
+])
+
 // net
 // https://github.com/electron/electron/blob/master/docs/api/net.md
 
@@ -870,10 +918,17 @@ app.on('ready', () => {
     { label: 'Item3', type: 'radio', checked: true },
     { label: 'Item4', type: 'radio' }
   ])
+
+  appIcon.setTitle('title')
   appIcon.setToolTip('This is my application.')
-  appIcon.setContextMenu(contextMenu)
+
   appIcon.setImage('/path/to/new/icon')
+  appIcon.setPressedImage('/path/to/new/icon')
+
   appIcon.popUpContextMenu(contextMenu, { x: 100, y: 100 })
+  appIcon.setContextMenu(contextMenu)
+
+  appIcon.setIgnoreDoubleClickEvents(true)
 
   appIcon.on('click', (event, bounds) => {
     console.log('click', event, bounds)
@@ -885,7 +940,12 @@ app.on('ready', () => {
 
   appIcon.displayBalloon({
     title: 'Hello World!',
-    content: 'This the the balloon content.'
+    content: 'This the the balloon content.',
+    iconType: 'error',
+    icon: 'path/to/icon',
+    respectQuietTime: true,
+    largeIcon: true,
+    noSound: true
   })
 })
 

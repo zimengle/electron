@@ -54,16 +54,15 @@ std::string GetMimeTypeForPath(const std::string& path) {
 
 class BundledDataSource : public content::URLDataSource {
  public:
-  BundledDataSource() {}
-  ~BundledDataSource() override {}
+  BundledDataSource() = default;
+  ~BundledDataSource() override = default;
 
   // content::URLDataSource implementation.
   std::string GetSource() override { return kChromeUIDevToolsHost; }
 
-  void StartDataRequest(
-      const std::string& path,
-      const content::ResourceRequestInfo::WebContentsGetter& wc_getter,
-      const GotDataCallback& callback) override {
+  void StartDataRequest(const std::string& path,
+                        const content::WebContents::Getter& wc_getter,
+                        const GotDataCallback& callback) override {
     // Serve request from local bundle.
     std::string bundled_path_prefix(kChromeUIDevToolsBundledPath);
     bundled_path_prefix += "/";

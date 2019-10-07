@@ -67,6 +67,10 @@ class Port {
 
 // Inject chrome API to the |context|
 export function injectTo (extensionId: string, context: any) {
+  if (process.electronBinding('features').isExtensionsEnabled()) {
+    throw new Error('Attempted to load JS chrome-extension polyfill with //extensions support enabled')
+  }
+
   const chrome = context.chrome = context.chrome || {}
 
   ipcRendererInternal.on(`CHROME_RUNTIME_ONCONNECT_${extensionId}`, (
@@ -153,7 +157,7 @@ export function injectTo (extensionId: string, context: any) {
         console.error('options are not supported')
       }
 
-      ipcRendererUtils.invoke('CHROME_RUNTIME_SEND_MESSAGE', targetExtensionId, message).then(responseCallback)
+      ipcRendererInternal.invoke('CHROME_RUNTIME_SEND_MESSAGE', targetExtensionId, message).then(responseCallback)
     },
 
     onConnect: new Event(),
@@ -168,7 +172,7 @@ export function injectTo (extensionId: string, context: any) {
       details: Chrome.Tabs.ExecuteScriptDetails,
       resultCallback: Chrome.Tabs.ExecuteScriptCallback = () => {}
     ) {
-      ipcRendererUtils.invoke('CHROME_TABS_EXECUTE_SCRIPT', tabId, extensionId, details)
+      ipcRendererInternal.invoke('CHROME_TABS_EXECUTE_SCRIPT', tabId, extensionId, details)
         .then((result: any) => resultCallback([result]))
     },
 
@@ -179,7 +183,7 @@ export function injectTo (extensionId: string, context: any) {
       _options: Chrome.Tabs.SendMessageDetails,
       responseCallback: Chrome.Tabs.SendMessageCallback = () => {}
     ) {
-      ipcRendererUtils.invoke('CHROME_TABS_SEND_MESSAGE', tabId, extensionId, message).then(responseCallback)
+      ipcRendererInternal.invoke('CHROME_TABS_SEND_MESSAGE', tabId, extensionId, message).then(responseCallback)
     },
 
     onUpdated: new Event(),

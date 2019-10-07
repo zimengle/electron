@@ -13,15 +13,20 @@
 #include "base/memory/ref_counted_delete_on_sequence.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/net/proxy_config_monitor.h"
+#include "chrome/browser/predictors/preconnect_manager.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/resource_context.h"
 #include "electron/buildflags/buildflags.h"
+#include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/media/media_device_id_salt.h"
-#include "shell/browser/net/url_request_context_getter.h"
 
 class PrefRegistrySimple;
 class PrefService;
 class ValueMapPrefStore;
+
+namespace network {
+class SharedURLLoaderFactory;
+}
 
 namespace storage {
 class SpecialStoragePolicy;
@@ -35,7 +40,6 @@ class AtomExtensionSystem;
 
 namespace electron {
 
-class AtomBlobReader;
 class AtomBrowserContext;
 class AtomDownloadManagerDelegate;
 class AtomPermissionManager;
@@ -85,11 +89,9 @@ class AtomBrowserContext
   std::string GetUserAgent() const;
   bool CanUseHttpCache() const;
   int GetMaxCacheSize() const;
-  AtomBlobReader* GetBlobReader();
-  network::mojom::NetworkContextPtr GetNetworkContext();
-  // Get the request context, if there is none, create it.
-  net::URLRequestContextGetter* GetRequestContext();
   ResolveProxyHelper* GetResolveProxyHelper();
+  predictors::PreconnectManager* GetPreconnectManager();
+  scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactory();
 
   // content::BrowserContext:
   base::FilePath GetPath() override;
@@ -109,10 +111,6 @@ class AtomBrowserContext
   content::PermissionControllerDelegate* GetPermissionControllerDelegate()
       override;
   storage::SpecialStoragePolicy* GetSpecialStoragePolicy() override;
-  net::URLRequestContextGetter* CreateRequestContext(
-      content::ProtocolHandlerMap* protocol_handlers,
-      content::URLRequestInterceptorScopedVector request_interceptors) override;
-  net::URLRequestContextGetter* CreateMediaRequestContext() override;
   content::ClientHintsControllerDelegate* GetClientHintsControllerDelegate()
       override;
 
@@ -155,9 +153,6 @@ class AtomBrowserContext
 
   static BrowserContextMap browser_context_map_;
 
-  // Self-destructing class responsible for creating URLRequestContextGetter
-  // on the UI thread and deletes itself on the IO thread.
-  URLRequestContextGetter::Handle* io_handle_;
   ValueMapPrefStore* in_memory_pref_store_;
 
   std::unique_ptr<content::ResourceContext> resource_context_;
@@ -166,7 +161,6 @@ class AtomBrowserContext
   std::unique_ptr<AtomDownloadManagerDelegate> download_manager_delegate_;
   std::unique_ptr<WebViewManager> guest_manager_;
   std::unique_ptr<AtomPermissionManager> permission_manager_;
-  std::unique_ptr<AtomBlobReader> blob_reader_;
   std::unique_ptr<MediaDeviceIDSalt> media_device_id_salt_;
   scoped_refptr<ResolveProxyHelper> resolve_proxy_helper_;
   scoped_refptr<storage::SpecialStoragePolicy> storage_policy_;
@@ -174,6 +168,8 @@ class AtomBrowserContext
   // Tracks the ProxyConfig to use, and passes any updates to a NetworkContext
   // ProxyConfigClient.
   std::unique_ptr<ProxyConfigMonitor> proxy_config_monitor_;
+
+  std::unique_ptr<predictors::PreconnectManager> preconnect_manager_;
 
   std::string user_agent_;
   base::FilePath path_;
@@ -185,6 +181,9 @@ class AtomBrowserContext
   // Owned by the KeyedService system.
   extensions::AtomExtensionSystem* extension_system_;
 #endif
+
+  // Shared URLLoaderFactory.
+  scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
 
   base::WeakPtrFactory<AtomBrowserContext> weak_factory_;
 

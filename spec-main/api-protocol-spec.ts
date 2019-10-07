@@ -195,7 +195,7 @@ describe('protocol module', () => {
   })
 
   describe('protocol.registerFileProtocol', () => {
-    const filePath = path.join(fixturesPath, 'asar', 'a.asar', 'file1')
+    const filePath = path.join(fixturesPath, 'test.asar', 'a.asar', 'file1')
     const fileContent = fs.readFileSync(filePath)
     const normalPath = path.join(fixturesPath, 'pages', 'a.html')
     const normalContent = fs.readFileSync(normalPath)
@@ -223,7 +223,7 @@ describe('protocol module', () => {
       expect(r.headers).to.include('x-great-header: sogreat')
     })
 
-    it('throws an error when custom headers are invalid', (done) => {
+    it.skip('throws an error when custom headers are invalid', (done) => {
       registerFileProtocol(protocolName, (request, callback) => {
         expect(() => callback({
           path: filePath,
@@ -248,7 +248,7 @@ describe('protocol module', () => {
     })
 
     it('fails when sending unexist-file', async () => {
-      const fakeFilePath = path.join(fixturesPath, 'asar', 'a.asar', 'not-exist')
+      const fakeFilePath = path.join(fixturesPath, 'test.asar', 'a.asar', 'not-exist')
       await registerFileProtocol(protocolName, (request, callback) => callback(fakeFilePath))
       await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejectedWith(Error, '404')
     })
@@ -606,7 +606,7 @@ describe('protocol module', () => {
     })
   })
 
-  describe('protocol.registerSchemesAsPrivileged standard', () => {
+  describe.skip('protocol.registerSchemesAsPrivileged standard', () => {
     const standardScheme = (global as any).standardScheme
     const origin = `${standardScheme}://fake-host`
     const imageURL = `${origin}/test.png`
@@ -669,7 +669,7 @@ describe('protocol module', () => {
       await requestReceived
     })
 
-    it('can access files through the FileSystem API', (done) => {
+    it.skip('can access files through the FileSystem API', (done) => {
       const filePath = path.join(fixturesPath, 'pages', 'filesystem.html')
       protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }), (error) => {
         if (error) return done(error)
@@ -690,7 +690,7 @@ describe('protocol module', () => {
     })
   })
 
-  describe('protocol.registerSchemesAsPrivileged cors-fetch', function () {
+  describe.skip('protocol.registerSchemesAsPrivileged cors-fetch', function () {
     const standardScheme = (global as any).standardScheme
     let w: BrowserWindow = null as unknown as BrowserWindow
     beforeEach(async () => {

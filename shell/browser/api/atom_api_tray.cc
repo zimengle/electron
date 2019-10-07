@@ -21,29 +21,34 @@
 namespace mate {
 
 template <>
-struct Converter<electron::TrayIcon::HighlightMode> {
+struct Converter<electron::TrayIcon::IconType> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     electron::TrayIcon::HighlightMode* out) {
-    using HighlightMode = electron::TrayIcon::HighlightMode;
+                     electron::TrayIcon::IconType* out) {
+    using IconType = electron::TrayIcon::IconType;
     std::string mode;
     if (ConvertFromV8(isolate, val, &mode)) {
-      if (mode == "always") {
-        *out = HighlightMode::ALWAYS;
+      if (mode == "none") {
+        *out = IconType::None;
         return true;
-      }
-      if (mode == "selection") {
-        *out = HighlightMode::SELECTION;
+      } else if (mode == "info") {
+        *out = IconType::Info;
         return true;
-      }
-      if (mode == "never") {
-        *out = HighlightMode::NEVER;
+      } else if (mode == "warning") {
+        *out = IconType::Warning;
+        return true;
+      } else if (mode == "error") {
+        *out = IconType::Error;
+        return true;
+      } else if (mode == "custom") {
+        *out = IconType::Custom;
         return true;
       }
     }
     return false;
   }
 };
+
 }  // namespace mate
 
 namespace electron {
@@ -169,10 +174,6 @@ std::string Tray::GetTitle() {
 #endif
 }
 
-void Tray::SetHighlightMode(TrayIcon::HighlightMode mode) {
-  tray_icon_->SetHighlightMode(mode);
-}
-
 void Tray::SetIgnoreDoubleClickEvents(bool ignore) {
 #if defined(OS_MACOSX)
   tray_icon_->SetIgnoreDoubleClickEvents(ignore);
@@ -189,22 +190,39 @@ bool Tray::GetIgnoreDoubleClickEvents() {
 
 void Tray::DisplayBalloon(mate::Arguments* args,
                           const mate::Dictionary& options) {
-  mate::Handle<NativeImage> icon;
-  options.Get("icon", &icon);
-  base::string16 title, content;
-  if (!options.Get("title", &title) || !options.Get("content", &content)) {
+  TrayIcon::BalloonOptions balloon_options;
+
+  if (!options.Get("title", &balloon_options.title) ||
+      !options.Get("content", &balloon_options.content)) {
     args->ThrowError("'title' and 'content' must be defined");
     return;
   }
 
+  mate::Handle<NativeImage> icon;
+  options.Get("icon", &icon);
+  options.Get("iconType", &balloon_options.icon_type);
+  options.Get("largeIcon", &balloon_options.large_icon);
+  options.Get("noSound", &balloon_options.no_sound);
+  options.Get("respectQuietTime", &balloon_options.respect_quiet_time);
+
+  if (!icon.IsEmpty()) {
 #if defined(OS_WIN)
-  tray_icon_->DisplayBalloon(
-      icon.IsEmpty() ? NULL : icon->GetHICON(GetSystemMetrics(SM_CXSMICON)),
-      title, content);
+    balloon_options.icon = icon->GetHICON(
+        GetSystemMetrics(balloon_options.large_icon ? SM_CXICON : SM_CXSMICON));
 #else
-  tray_icon_->DisplayBalloon(icon.IsEmpty() ? gfx::Image() : icon->image(),
-                             title, content);
+    balloon_options.icon = icon->image();
 #endif
+  }
+
+  tray_icon_->DisplayBalloon(balloon_options);
+}
+
+void Tray::RemoveBalloon() {
+  tray_icon_->RemoveBalloon();
+}
+
+void Tray::Focus() {
+  tray_icon_->Focus();
 }
 
 void Tray::PopUpContextMenu(mate::Arguments* args) {
@@ -228,19 +246,20 @@ gfx::Rect Tray::GetBounds() {
 void Tray::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "Tray"));
+  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .MakeDestroyable()
       .SetMethod("setImage", &Tray::SetImage)
       .SetMethod("setPressedImage", &Tray::SetPressedImage)
       .SetMethod("setToolTip", &Tray::SetToolTip)
       .SetMethod("setTitle", &Tray::SetTitle)
       .SetMethod("getTitle", &Tray::GetTitle)
-      .SetMethod("setHighlightMode", &Tray::SetHighlightMode)
       .SetMethod("setIgnoreDoubleClickEvents",
                  &Tray::SetIgnoreDoubleClickEvents)
       .SetMethod("getIgnoreDoubleClickEvents",
                  &Tray::GetIgnoreDoubleClickEvents)
       .SetMethod("displayBalloon", &Tray::DisplayBalloon)
+      .SetMethod("removeBalloon", &Tray::RemoveBalloon)
+      .SetMethod("focus", &Tray::Focus)
       .SetMethod("popUpContextMenu", &Tray::PopUpContextMenu)
       .SetMethod("setContextMenu", &Tray::SetContextMenu)
       .SetMethod("getBounds", &Tray::GetBounds);

@@ -120,6 +120,10 @@ void BrowserView::SetBounds(const gfx::Rect& bounds) {
   view_->SetBounds(bounds);
 }
 
+gfx::Rect BrowserView::GetBounds() {
+  return view_->GetBounds();
+}
+
 void BrowserView::SetBackgroundColor(const std::string& color_name) {
   view_->SetBackgroundColor(ParseHexColor(color_name));
 }
@@ -136,10 +140,11 @@ v8::Local<v8::Value> BrowserView::GetWebContents() {
 void BrowserView::BuildPrototype(v8::Isolate* isolate,
                                  v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(mate::StringToV8(isolate, "BrowserView"));
+  gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   mate::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .MakeDestroyable()
       .SetMethod("setAutoResize", &BrowserView::SetAutoResize)
       .SetMethod("setBounds", &BrowserView::SetBounds)
+      .SetMethod("getBounds", &BrowserView::GetBounds)
       .SetMethod("setBackgroundColor", &BrowserView::SetBackgroundColor)
       .SetProperty("webContents", &BrowserView::GetWebContents)
       .SetProperty("id", &BrowserView::ID);

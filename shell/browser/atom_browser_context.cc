@@ -4,6 +4,8 @@
 
 #include "shell/browser/atom_browser_context.h"
 
+#include <memory>
+
 #include <utility>
 
 #include "base/command_line.h"
@@ -28,7 +30,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "net/base/escape.h"
 #include "services/network/public/cpp/features.h"
-#include "shell/browser/atom_blob_reader.h"
+#include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "shell/browser/atom_browser_client.h"
 #include "shell/browser/atom_browser_main_parts.h"
 #include "shell/browser/atom_download_manager_delegate.h"
@@ -113,12 +115,6 @@ AtomBrowserContext::AtomBrowserContext(const std::string& partition,
   // Initialize Pref Registry.
   InitPrefs();
 
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    proxy_config_monitor_ = std::make_unique<ProxyConfigMonitor>(prefs_.get());
-    io_handle_ =
-        new URLRequestContextGetter::Handle(weak_factory_.GetWeakPtr());
-  }
-
   cookie_change_notifier_ = std::make_unique<CookieChangeNotifier>(this);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -137,12 +133,8 @@ AtomBrowserContext::~AtomBrowserContext() {
   NotifyWillBeDestroyed(this);
   ShutdownStoragePartitions();
 
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    io_handle_->ShutdownOnUIThread();
-  } else {
-    BrowserThread::DeleteSoon(BrowserThread::IO, FROM_HERE,
-                              std::move(resource_context_));
-  }
+  BrowserThread::DeleteSoon(BrowserThread::IO, FROM_HERE,
+                            std::move(resource_context_));
 
   // Notify any keyed services of browser context destruction.
   BrowserContextDependencyManager::GetInstance()->DestroyBrowserContextServices(
@@ -197,47 +189,6 @@ void AtomBrowserContext::SetUserAgent(const std::string& user_agent) {
   user_agent_ = user_agent;
 }
 
-net::URLRequestContextGetter* AtomBrowserContext::CreateRequestContext(
-    content::ProtocolHandlerMap* protocol_handlers,
-    content::URLRequestInterceptorScopedVector protocol_interceptors) {
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    return io_handle_
-        ->CreateMainRequestContextGetter(protocol_handlers,
-                                         std::move(protocol_interceptors))
-        .get();
-  } else {
-    NOTREACHED();
-    return nullptr;
-  }
-}
-
-net::URLRequestContextGetter* AtomBrowserContext::CreateMediaRequestContext() {
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    return io_handle_->GetMainRequestContextGetter().get();
-  } else {
-    NOTREACHED();
-    return nullptr;
-  }
-}
-
-net::URLRequestContextGetter* AtomBrowserContext::GetRequestContext() {
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    return GetDefaultStoragePartition(this)->GetURLRequestContext();
-  } else {
-    NOTREACHED();
-    return nullptr;
-  }
-}
-
-network::mojom::NetworkContextPtr AtomBrowserContext::GetNetworkContext() {
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    return io_handle_->GetNetworkContext();
-  } else {
-    NOTREACHED();
-    return nullptr;
-  }
-}
-
 base::FilePath AtomBrowserContext::GetPath() {
   return path_;
 }
@@ -255,18 +206,14 @@ int AtomBrowserContext::GetMaxCacheSize() const {
 }
 
 content::ResourceContext* AtomBrowserContext::GetResourceContext() {
-  if (!base::FeatureList::IsEnabled(network::features::kNetworkService)) {
-    return io_handle_->GetResourceContext();
-  } else {
-    if (!resource_context_)
-      resource_context_.reset(new content::ResourceContext);
-    return resource_context_.get();
-  }
+  if (!resource_context_)
+    resource_context_ = std::make_unique<content::ResourceContext>();
+  return resource_context_.get();
 }
 
 std::string AtomBrowserContext::GetMediaDeviceIDSalt() {
   if (!media_device_id_salt_.get())
-    media_device_id_salt_.reset(new MediaDeviceIDSalt(prefs_.get()));
+    media_device_id_salt_ = std::make_unique<MediaDeviceIDSalt>(prefs_.get());
   return media_device_id_salt_->GetSalt();
 }
 
@@ -283,22 +230,22 @@ content::DownloadManagerDelegate*
 AtomBrowserContext::GetDownloadManagerDelegate() {
   if (!download_manager_delegate_.get()) {
     auto* download_manager = content::BrowserContext::GetDownloadManager(this);
-    download_manager_delegate_.reset(
-        new AtomDownloadManagerDelegate(download_manager));
+    download_manager_delegate_ =
+        std::make_unique<AtomDownloadManagerDelegate>(download_manager);
   }
   return download_manager_delegate_.get();
 }
 
 content::BrowserPluginGuestManager* AtomBrowserContext::GetGuestManager() {
   if (!guest_manager_)
-    guest_manager_.reset(new WebViewManager);
+    guest_manager_ = std::make_unique<WebViewManager>();
   return guest_manager_.get();
 }
 
 content::PermissionControllerDelegate*
 AtomBrowserContext::GetPermissionControllerDelegate() {
   if (!permission_manager_.get())
-    permission_manager_.reset(new AtomPermissionManager);
+    permission_manager_ = std::make_unique<AtomPermissionManager>();
   return permission_manager_.get();
 }
 
@@ -310,13 +257,50 @@ std::string AtomBrowserContext::GetUserAgent() const {
   return user_agent_;
 }
 
-AtomBlobReader* AtomBrowserContext::GetBlobReader() {
-  if (!blob_reader_.get()) {
-    content::ChromeBlobStorageContext* blob_context =
-        content::ChromeBlobStorageContext::GetFor(this);
-    blob_reader_.reset(new AtomBlobReader(blob_context));
+predictors::PreconnectManager* AtomBrowserContext::GetPreconnectManager() {
+  if (!preconnect_manager_.get()) {
+    preconnect_manager_ =
+        std::make_unique<predictors::PreconnectManager>(nullptr, this);
   }
-  return blob_reader_.get();
+  return preconnect_manager_.get();
+}
+
+scoped_refptr<network::SharedURLLoaderFactory>
+AtomBrowserContext::GetURLLoaderFactory() {
+  if (url_loader_factory_)
+    return url_loader_factory_;
+
+  network::mojom::URLLoaderFactoryPtr network_factory;
+  mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_request =
+      mojo::MakeRequest(&network_factory);
+
+  // Consult the embedder.
+  mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>
+      header_client;
+  static_cast<content::ContentBrowserClient*>(AtomBrowserClient::Get())
+      ->WillCreateURLLoaderFactory(
+          this, nullptr, -1,
+          content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
+          url::Origin(), &factory_request, &header_client, nullptr);
+
+  network::mojom::URLLoaderFactoryParamsPtr params =
+      network::mojom::URLLoaderFactoryParams::New();
+  params->header_client = std::move(header_client);
+  params->process_id = network::mojom::kBrowserProcessId;
+  params->is_trusted = true;
+  params->is_corb_enabled = false;
+  // The tests of net module would fail if this setting is true, it seems that
+  // the non-NetworkService implementation always has web security enabled.
+  params->disable_web_security = false;
+
+  auto* storage_partition =
+      content::BrowserContext::GetDefaultStoragePartition(this);
+  storage_partition->GetNetworkContext()->CreateURLLoaderFactory(
+      std::move(factory_request), std::move(params));
+  url_loader_factory_ =
+      base::MakeRefCounted<network::WrapperSharedURLLoaderFactory>(
+          std::move(network_factory));
+  return url_loader_factory_;
 }
 
 content::PushMessagingService* AtomBrowserContext::GetPushMessagingService() {
