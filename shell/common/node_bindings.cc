@@ -136,7 +136,45 @@ bool IsPackagedApp() {
 #endif
 }
 
+// Initialize Node.js cli options to pass to Node.js
+// See https://nodejs.org/api/cli.html#cli_options
+void SetNodeCliFlags() {
+  // Options that are unilaterally disallowed
+  const std::set<std::string> disallowed = {
+      "--openssl-config", "--use-bundled-ca", "--use-openssl-ca",
+      "--force-fips", "--enable-fips"};
+
+  std::vector<std::string> args;
+  for (const auto& arg : base::CommandLine::ForCurrentProcess()->argv()) {
+#if defined(OS_WIN)
+    std::string option = base::UTF16ToUTF8(arg);
+#else
+    std::string option = arg;
+#endif
+    if (disallowed.find(option) != disallowed.end()) {
+      // Skip NODE_OPTIONS specifically disallowed for use in Node.js
+      // through Electron owing to constraints like BoringSSL.
+      LOG(ERROR) << "The Node.js cli flag " << option
+                 << " is not supported in Electron";
+    } else {
+      args.push_back(option);
+    }
+  }
+
+  std::vector<std::string> exec_args;
+  std::vector<std::string> errors;
+  const int exit_code = ProcessGlobalArgs(&args, &exec_args, &errors,
+                                          node::kAllowedInEnvironment);
+  if (exit_code != 0) {
+    LOG(ERROR) << "Error parsing Node.js cli flags";
+  } else if (!errors.empty()) {
+    LOG(ERROR) << "Error parsing node cli flags: "
+               << base::JoinString(errors, " ");
+  }
+}
+
 // Initialize NODE_OPTIONS to pass to Node.js
+// See https://nodejs.org/api/cli.html#cli_node_options_options
 void SetNodeOptions(base::Environment* env) {
   // Options that are unilaterally disallowed
   const std::set<std::string> disallowed = {
@@ -268,6 +306,9 @@ void NodeBindings::Initialize() {
 
   // Explicitly register electron's builtin modules.
   RegisterBuiltinModules();
+
+  // Parse and set Node.js cli flags.
+  SetNodeCliFlags();
 
   // pass non-null program name to argv so it doesn't crash
   // trying to index into a nullptr
