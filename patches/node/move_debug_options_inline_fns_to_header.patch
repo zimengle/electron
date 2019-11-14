@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Fri, 15 Nov 2019 08:16:43 -0800
+Subject: move debug_options inline fns to header
+
+W can set DebugOptions ourselves through ParseGlobalArgs. However
+we also need to create and start the inspector agent with the
+DebugOptions set by users, since the inspector agent Start
+function takes a parameter const DebugOptions& options.
+
+The most straightforward way to do this is for us to pass
+env->options()->debug_options() to our inspector agent Start call,
+This therefore moves that definition into a public-facing file,
+allowing us to pass correct options to the inspector without needing
+to parse all-new ones we'd previously parsed on startup.
+
+Upstreamed at https://github.com/nodejs/node/pull/30494.
+
+diff --git a/src/node_options-inl.h b/src/node_options-inl.h
+index 8fc2feff4dc6d42f071064cc0af4308bf766c469..8bb5b6155a21d174b393176c68a796324e20a858 100644
+--- a/src/node_options-inl.h
++++ b/src/node_options-inl.h
+@@ -13,14 +13,6 @@ PerIsolateOptions* PerProcessOptions::get_per_isolate_options() {
+   return per_isolate.get();
+ }
+ 
+-DebugOptions* EnvironmentOptions::get_debug_options() {
+-  return &debug_options_;
+-}
+-
+-const DebugOptions& EnvironmentOptions::debug_options() const {
+-  return debug_options_;
+-}
+-
+ EnvironmentOptions* PerIsolateOptions::get_per_env_options() {
+   return per_env.get();
+ }
+diff --git a/src/node_options.h b/src/node_options.h
+index 002d9f5d49a8cc104669217d9dd0b1f8a4d99115..7f4f805390d7782fca247d7de8410ef6f95938ee 100644
+--- a/src/node_options.h
++++ b/src/node_options.h
+@@ -167,8 +167,9 @@ class EnvironmentOptions : public Options {
+ 
+   std::vector<std::string> user_argv;
+ 
+-  inline DebugOptions* get_debug_options();
+-  inline const DebugOptions& debug_options() const;
++  inline DebugOptions* get_debug_options() { return &debug_options_; }
++  inline const DebugOptions& debug_options() const { return debug_options_; }
++
+   void CheckOptions(std::vector<std::string>* errors) override;
+ 
+  private:

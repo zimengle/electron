@@ -165,9 +165,8 @@ void SetNodeCliFlags() {
   std::vector<std::string> errors;
   const int exit_code = ProcessGlobalArgs(&args, &exec_args, &errors,
                                           node::kAllowedInEnvironment);
-  if (exit_code != 0) {
-    LOG(ERROR) << "Error parsing Node.js cli flags";
-  } else if (!errors.empty()) {
+
+  if (!errors.empty()) {
     LOG(ERROR) << "Error parsing node cli flags: "
                << base::JoinString(errors, " ");
   }
