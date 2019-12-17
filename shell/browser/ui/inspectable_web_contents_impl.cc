@@ -628,7 +628,7 @@ void InspectableWebContentsImpl::LoadNetworkResource(
 
   network::ResourceRequest resource_request;
   resource_request.url = gurl;
-  resource_request.site_for_cookies = gurl;
+  resource_request.site_for_cookies = net::SiteForCookies::FromUrl(gurl);
   resource_request.headers.AddHeadersFromString(headers);
 
   NetworkResourceLoader::URLLoaderFactoryHolder url_loader_factory;
