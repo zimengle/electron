@@ -133,6 +133,7 @@ void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
     details->Set("ip", info->response_ip);
   if (info->response_headers) {
     details->Set("fromCache", info->response_from_cache);
+    details->Set("responseHeaderText", info->response_headers_text);
     details->Set("statusLine", info->response_headers->GetStatusLine());
     details->Set("statusCode", info->response_headers->response_code());
     details->Set("responseHeaders",
