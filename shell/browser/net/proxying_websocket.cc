@@ -136,6 +136,7 @@ void ProxyingWebSocket::ContinueToHeadersReceived() {
   auto continuation =
       base::BindRepeating(&ProxyingWebSocket::OnHeadersReceivedComplete,
                           weak_factory_.GetWeakPtr());
+  info_->AddResponseInfoFromResourceResponse(response_);
   int result = web_request_api_->OnHeadersReceived(
       &info_.value(), request_, continuation, response_.headers.get(),
       &override_headers_, &redirect_url_);
