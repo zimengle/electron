@@ -81,9 +81,13 @@ net_avoid_vector_const_elements.patch
 feat_add_set_theme_source_to_allow_apps_to.patch
 build_fix_when_building_with_enable_plugins_false.patch
 x11_and_ozone_move_closing_logic_to_dwthplatform.patch
+<<<<<<< HEAD
 add_trustedauthclient_to_urlloaderfactory.patch
 make_autocorrect_off_and_spellcheck_false_disable_touch_bar_typing.patch
 fix_focusowningwebcontents_to_handle_renderwidgethosts_for_oopifs.patch
 feat_allow_disbaling_blink_scheduler_throttling_per_renderview.patch
 accessible_pane_view.patch
 only_apply_transform_when_outermost_outer_webcontents.patch
+=======
+compatible_electron3_net.patch
+>>>>>>> fix-v7.1.1

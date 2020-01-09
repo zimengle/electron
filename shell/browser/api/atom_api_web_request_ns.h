@@ -15,7 +15,7 @@
 #include "gin/wrappable.h"
 #include "native_mate/dictionary.h"
 #include "native_mate/handle.h"
-#include "shell/browser/net/proxying_url_loader_factory.h"
+#include "shell/browser/api/atom_web_request_api.h"
 
 namespace content {
 class BrowserContext;
