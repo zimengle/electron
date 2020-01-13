@@ -967,6 +967,29 @@ describe('session module', () => {
         details.requestHeaders.foo = "bar";
         callback({ requestHeaders: details.requestHeaders });
       });
+      session.defaultSession.webRequest.onResponseStarted({ urls: ['<all_urls>'] }, (details) => {
+        if (details.url.startsWith('ws://')) {
+          expect(details.responseHeaders['Connection'][0]).be.equal('Upgrade');
+        } else if (details.url.startsWith('http')) {
+          expect(details.responseHeaders['foo1'][0]).be.equal('bar1');
+        }
+      });
+      session.defaultSession.webRequest.onSendHeaders({ urls: ['<all_urls>'] }, (details) => {
+        if (details.url.startsWith('ws://')) {
+          expect(details.requestHeaders['foo']).be.equal('bar');
+          expect(details.requestHeaders['Upgrade']).be.equal('websocket');
+
+        } else if (details.url.startsWith('http')) {
+          expect(details.requestHeaders['foo']).be.equal('bar');
+        }
+      });
+      session.defaultSession.webRequest.onCompleted({ urls: ['<all_urls>'] }, (details) => {
+        if (details.url.startsWith('ws://')) {
+          expect(details['error']).be.equal('net::ERR_WS_UPGRADE');
+        } else if (details.url.startsWith('http')) {
+          expect(details['error']).be.equal('net::OK');
+        }
+      });    
       w.webContents.on('ipc-message', (event, channel, message) => {
         if (channel === 'success') {
           expect(receivedHeaders['/websocket']['Upgrade'][0]).to.equal('websocket')
