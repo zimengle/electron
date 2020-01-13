@@ -19,6 +19,7 @@
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "net/ssl/client_cert_identity.h"
 #include "services/network/public/mojom/websocket.mojom.h"
+#include "shell/browser/api/atom_api_web_request_ns.h"
 
 namespace content {
 class QuotaPermissionContext;
@@ -230,6 +231,7 @@ class AtomBrowserClient : public content::ContentBrowserClient,
       const content::ChildProcessTerminationInfo& info) override;
 
  private:
+  scoped_refptr<electron::api::RequestIDGenerator> request_id_generator_;
   struct ProcessPreferences {
     bool sandbox = false;
     bool native_window_open = false;

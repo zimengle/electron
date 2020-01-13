@@ -19,6 +19,7 @@
 #include "services/network/public/cpp/resource_response.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
+#include "shell/browser/api/atom_api_web_request_ns.h"
 #include "shell/browser/api/atom_web_request_api.h"
 #include "shell/browser/net/atom_url_loader_factory.h"
 
@@ -157,6 +158,7 @@ class ProxyingURLLoaderFactory
   };
 
   ProxyingURLLoaderFactory(
+      scoped_refptr<api::RequestIDGenerator> request_id_generator,
       WebRequestAPI* web_request_api,
       const HandlersMap& intercepted_handlers,
       int render_process_id,
@@ -195,7 +197,7 @@ class ProxyingURLLoaderFactory
   void MaybeDeleteThis();
 
   bool ShouldIgnoreConnectionsLimit(const network::ResourceRequest& request);
-
+  scoped_refptr<api::RequestIDGenerator> request_id_generator_;
   // Passed from api::WebRequestNS.
   WebRequestAPI* web_request_api_;
 

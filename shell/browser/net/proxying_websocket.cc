@@ -15,11 +15,8 @@
 
 namespace electron {
 
-namespace {
-int64_t g_request_id = 10000;
-}
-
 ProxyingWebSocket::ProxyingWebSocket(
+    scoped_refptr<api::RequestIDGenerator> request_id_generator,
     WebRequestAPI* web_request_api,
     WebSocketFactory factory,
     const network::ResourceRequest& request,
@@ -37,8 +34,8 @@ ProxyingWebSocket::ProxyingWebSocket(
       request_headers_(request.headers),
       has_extra_headers_(has_extra_headers) {
   info_.emplace(extensions::WebRequestInfoInitParams(
-      ++g_request_id, process_id, render_frame_id, nullptr, MSG_ROUTING_NONE,
-      request,
+      request_id_generator->Generate(), process_id, render_frame_id, nullptr,
+      MSG_ROUTING_NONE, request,
       /*is_download=*/false,
       /*is_async=*/true,
       /*is_service_worker_script=*/false));
@@ -58,7 +55,7 @@ ProxyingWebSocket::~ProxyingWebSocket() {
   }
 }
 
-void ProxyingWebSocket::StartProxy() {
+void ProxyingWebSocket::Start() {
   // If the header client will be used, we start the request immediately, and
   // OnBeforeSendHeaders and OnSendHeaders will be handled there. Otherwise,
   // send these events before the request starts.
@@ -246,7 +243,8 @@ void ProxyingWebSocket::StartProxying(
     int process_id,
     int render_frame_id,
     const url::Origin& origin,
-    content::BrowserContext* browser_context) {
+    content::BrowserContext* browser_context,
+    scoped_refptr<api::RequestIDGenerator> request_id_generator) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   network::ResourceRequest request;
   request.url = url;
@@ -256,9 +254,10 @@ void ProxyingWebSocket::StartProxying(
   }
   request.request_initiator = origin;
   auto* proxy = new ProxyingWebSocket(
-      web_request_api, std::move(factory), request, std::move(handshake_client),
-      has_extra_headers, process_id, render_frame_id, browser_context);
-  proxy->StartProxy();
+      request_id_generator, web_request_api, std::move(factory), request,
+      std::move(handshake_client), has_extra_headers, process_id,
+      render_frame_id, browser_context);
+  proxy->Start();
 }
 
 void ProxyingWebSocket::OnBeforeRequestComplete(int error_code) {

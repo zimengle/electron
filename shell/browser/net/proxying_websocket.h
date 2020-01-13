@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef EXTENSIONS_BROWSER_API_WEB_REQUEST_WEB_REQUEST_PROXYING_WEBSOCKET_H_
-#define EXTENSIONS_BROWSER_API_WEB_REQUEST_WEB_REQUEST_PROXYING_WEBSOCKET_H_
+#ifndef SHELL_BROWSER_NET_PROXYING_WEBSOCKET_H_
+#define SHELL_BROWSER_NET_PROXYING_WEBSOCKET_H_
 
 #include <string>
 #include <vector>
@@ -24,6 +24,7 @@
 #include "services/network/public/cpp/resource_response.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/websocket.mojom.h"
+#include "shell/browser/api/atom_api_web_request_ns.h"
 #include "shell/browser/api/atom_web_request_api.h"
 #include "url/gurl.h"
 #include "url/origin.h"
@@ -39,6 +40,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
   using WebSocketFactory = content::ContentBrowserClient::WebSocketFactory;
 
   ProxyingWebSocket(
+      scoped_refptr<api::RequestIDGenerator> request_id_generator,
       WebRequestAPI* web_request_api,
       WebSocketFactory factory,
       const network::ResourceRequest& request,
@@ -50,7 +52,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
       content::BrowserContext* browser_context);
   ~ProxyingWebSocket() override;
 
-  void StartProxy();
+  void Start();
 
   WebRequestAPI* web_request_api() { return web_request_api_; }
 
@@ -90,7 +92,8 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
       int process_id,
       int render_frame_id,
       const url::Origin& origin,
-      content::BrowserContext* browser_context);
+      content::BrowserContext* browser_context,
+      scoped_refptr<api::RequestIDGenerator> request_id_generator);
 
  private:
   WebRequestAPI* web_request_api_;
@@ -151,4 +154,4 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
 
 }  // namespace electron
 
-#endif  // EXTENSIONS_BROWSER_API_WEB_REQUEST_WEB_REQUEST_PROXYING_WEBSOCKET_H_
+#endif  // SHELL_BROWSER_NET_PROXYING_WEBSOCKET_H_
