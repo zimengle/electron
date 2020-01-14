@@ -1,5 +1,11 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: wuxiaopan <wuxiaopan@baidu.com>
+Date: Tue, 14 Jan 2020 16:51:07 +0800
+Subject: fix: enable host,referer,set-cookie
+
+
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index cb7a31d1b11e..9925f228aab3 100644
+index cb7a31d1b11e0280f7f9f3d2410cdd83e614284f..9925f228aab31b83459f87967b093c6d172ea253 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -1155,11 +1155,16 @@ void RenderWidgetHostImpl::ForwardMouseEventWithLatencyInfo(
@@ -22,7 +28,7 @@ index cb7a31d1b11e..9925f228aab3 100644
    DispatchInputEventWithLatencyInfo(mouse_event, &mouse_with_latency.latency);
    input_router_->SendMouseEvent(
 diff --git a/mojo/public/c/system/thunks.cc b/mojo/public/c/system/thunks.cc
-index 6cc36c150feb..9dcd6719ce3a 100644
+index 6cc36c150feb59cdec38b8496e9b49baa5a35d4c..9dcd6719ce3a4a57aeb39b7cd970d4195d265357 100644
 --- a/mojo/public/c/system/thunks.cc
 +++ b/mojo/public/c/system/thunks.cc
 @@ -8,10 +8,9 @@
@@ -133,7 +139,7 @@ index 6cc36c150feb..9dcd6719ce3a 100644
 +}
 \ No newline at end of file
 diff --git a/net/http/http_response_headers.cc b/net/http/http_response_headers.cc
-index 087922755a2e..76cb59a0b201 100644
+index 087922755a2eee24f6a0108e42695a5021925d93..76cb59a0b201a13ae495af115dbbd7b19e492a4b 100644
 --- a/net/http/http_response_headers.cc
 +++ b/net/http/http_response_headers.cc
 @@ -211,7 +211,7 @@ void HttpResponseHeaders::Persist(base::Pickle* pickle,
@@ -146,7 +152,7 @@ index 087922755a2e..76cb59a0b201 100644
    if ((options & PERSIST_SANS_CHALLENGES) == PERSIST_SANS_CHALLENGES)
      AddChallengeHeaders(&filter_headers);
 diff --git a/net/http/http_response_headers_unittest.cc b/net/http/http_response_headers_unittest.cc
-index f24fc6b1a9d9..b18e50645b3b 100644
+index f24fc6b1a9d9bd7ea355817ad28dbd8cf9ab92f0..b18e50645b3b78d03acb2f5bc74979b3d5f3f017 100644
 --- a/net/http/http_response_headers_unittest.cc
 +++ b/net/http/http_response_headers_unittest.cc
 @@ -447,18 +447,18 @@ const struct PersistData persistence_tests[] = {
@@ -174,7 +180,7 @@ index f24fc6b1a9d9..b18e50645b3b 100644
  
       "HTTP/1.1 200 OK\n"
 diff --git a/net/url_request/url_request_http_job.cc b/net/url_request/url_request_http_job.cc
-index 8eef86523c97..acea97ac8d98 100644
+index 8eef86523c971209bac52e3cc325fc6afa051f57..acea97ac8d98586f685a70e112ea0cd7a4dc04f6 100644
 --- a/net/url_request/url_request_http_job.cc
 +++ b/net/url_request/url_request_http_job.cc
 @@ -337,7 +337,7 @@ void URLRequestHttpJob::Start() {
@@ -207,7 +213,7 @@ index 8eef86523c97..acea97ac8d98 100644
      request_info_.extra_headers.SetHeader(HttpRequestHeaders::kCookie,
                                            cookie_line);
 diff --git a/net/url_request/url_request_unittest.cc b/net/url_request/url_request_unittest.cc
-index cb008715458e..994750487f7d 100644
+index cb008715458e115af73ecc15ec6bc0eef0c76ac4..994750487f7d046491ca6514ed0fbcccf551704c 100644
 --- a/net/url_request/url_request_unittest.cc
 +++ b/net/url_request/url_request_unittest.cc
 @@ -4187,7 +4187,7 @@ TEST_F(URLRequestTest, DoNotOverrideReferrer) {
@@ -220,7 +226,7 @@ index cb008715458e..994750487f7d 100644
  }
  
 diff --git a/services/network/public/cpp/header_util.cc b/services/network/public/cpp/header_util.cc
-index d9057f899f30..be0ea693ccda 100644
+index d9057f899f30084d6001f7228d9fcacaeb56c39e..be0ea693ccda600f073aac4e263f572e27d3350f 100644
 --- a/services/network/public/cpp/header_util.cc
 +++ b/services/network/public/cpp/header_util.cc
 @@ -21,7 +21,7 @@ const char* kUnsafeHeaders[] = {
