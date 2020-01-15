@@ -1,5 +1,12 @@
+// Copyright (c) 2019 GitHub, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
 #ifndef SHELL_BROWSER_API_ATOM_WEB_REQUEST_API_H_
 #define SHELL_BROWSER_API_ATOM_WEB_REQUEST_API_H_
+
+#include <set>
+#include <string>
 
 #include "extensions/browser/api/web_request/web_request_info.h"
 #include "services/network/public/cpp/resource_request.h"
