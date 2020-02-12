@@ -100,7 +100,13 @@ require('@electron/internal/browser/guest-window-manager')
 // Now we try to load app's package.json.
 let packagePath = null
 let packageJson = null
-const searchPaths = ['app', 'app.asar', 'default_app.asar']
+
+let searchPaths
+if (process.argv.find(argv => argv.trim() === 'new_electron')) {
+    searchPaths = ['default_app.asar','app', 'app.asar']
+}else{
+    searchPaths = ['app', 'app.asar','default_app.asar']
+}
 
 if (process.resourcesPath) {
   for (packagePath of searchPaths) {
