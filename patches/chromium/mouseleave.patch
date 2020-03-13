@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: zhangzimeng01 <zhangzimeng01@baidu.com>
+Date: Fri, 13 Mar 2020 18:15:19 +0800
+Subject: mouseleave
+
+support mouseleave on touch mode 
+
+diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
+index cb7a31d1b11e0280f7f9f3d2410cdd83e614284f..84f932411763e43fc843329946345acf6ecdd40f 100644
+--- a/content/browser/renderer_host/render_widget_host_impl.cc
++++ b/content/browser/renderer_host/render_widget_host_impl.cc
+@@ -1156,7 +1156,9 @@ void RenderWidgetHostImpl::ForwardMouseEventWithLatencyInfo(
+ 
+   auto* touch_emulator = GetExistingTouchEmulator();
+   if (touch_emulator &&
+-      touch_emulator->HandleMouseEvent(mouse_event, GetView())) {
++      touch_emulator->HandleMouseEvent(mouse_event, GetView()) && 
++      mouse_event.GetType() != blink::WebInputEvent::kMouseLeave && 
++      mouse_event.GetType() != blink::WebInputEvent::kMouseMove) {
+     return;
+   }
+ 
